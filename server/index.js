@@ -171,62 +171,61 @@ app.get('/qsmxt', (req, res) => {
   });
 });
 
-
 const getDirectoryStructure = (dirPath) => {
-    const result = {};
-    const files = fs.readdirSync(dirPath);
-  
-    files.forEach(file => {
-      const filePath = path.join(dirPath, file);
-      const stats = fs.statSync(filePath);
-  
-      if (stats.isDirectory()) {
-        result[file] = getDirectoryStructure(filePath);
-      } else {
-        result[file] = null;  // Mark files with null
-      }
-    });
-  
-    return result;
-  };
-  
-  app.post('/get-directory-structure', (req, res) => {
-    const { directory } = req.body;
-  
-    try {
-      const structure = getDirectoryStructure(directory);
-      res.json(structure);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-  
-  app.post('/read-json-file', (req, res) => {
-    const { filePath } = req.body;
-    console.log(`Reading JSON file from: ${filePath}`);
-  
-    try {
-      const data = fs.readFileSync(filePath, 'utf-8');
-      const jsonData = JSON.parse(data);
-      res.json(jsonData);
-    } catch (error) {
-      console.error('Error reading JSON file:', error.message);
-      res.status(500).json({ error: error.message });
-    }
-  });
-  
-  app.post('/read-nifti-file', (req, res) => {
-    const { filePath } = req.body;
-    const absolutePath = path.resolve(filePath);
-    if (fs.existsSync(absolutePath)) {
-      const relativePath = path.relative('/', absolutePath);
-      res.json({ url: `http://localhost:${PORT}/files/${relativePath}` });
+  const result = {};
+  const files = fs.readdirSync(dirPath);
+
+  files.forEach(file => {
+    const filePath = path.join(dirPath, file);
+    const stats = fs.statSync(filePath);
+
+    if (stats.isDirectory()) {
+      result[file] = getDirectoryStructure(filePath);
     } else {
-      res.status(404).send('File not found');
+      result[file] = null;  // Mark files with null
     }
   });
 
-  app.use('/files', express.static(path.resolve('/')));
+  return result;
+};
+
+app.post('/get-directory-structure', (req, res) => {
+  const { directory } = req.body;
+
+  try {
+    const structure = getDirectoryStructure(directory);
+    res.json(structure);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/read-text-file', (req, res) => {
+  const { filePath } = req.body;
+  console.log(`Reading text file from: ${filePath}`);
+
+  try {
+    const data = fs.readFileSync(filePath, 'utf-8');
+    res.json({ content: data });
+  } catch (error) {
+    console.error('Error reading text file:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/read-nifti-file', (req, res) => {
+  const { filePath } = req.body;
+  const absolutePath = path.resolve(filePath);
+  if (fs.existsSync(absolutePath)) {
+    const relativePath = path.relative('/', absolutePath);
+    res.json({ url: `http://localhost:${PORT}/files/${relativePath}` });
+  } else {
+    res.status(404).send('File not found');
+  }
+});
+
+app.use('/files', express.static(path.resolve('/')));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
