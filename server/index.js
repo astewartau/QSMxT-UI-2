@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 let childProcess;
@@ -13,8 +15,8 @@ app.get('/', (req, res) => {
 });
 
 app.post('/start-dicom-sort', (req, res) => {
-  const { directory, checkAllFiles } = req.body;
-  let command = `dicom-sort ${directory} dicoms-sorted`;
+  const { directory, outputDirectory, checkAllFiles } = req.body;
+  let command = `dicom-sort ${directory} ${outputDirectory}`;
   if (checkAllFiles) {
     command += ' --check_all_files';
   }
@@ -66,8 +68,8 @@ app.get('/dicom-sort', (req, res) => {
 });
 
 app.post('/start-dicom-convert', (req, res) => {
-  const { bidsDirectory, patterns } = req.body;
-  let command = `dicom-convert ${bidsDirectory} bids --auto_yes`;
+  const { bidsDirectory, outputDirectory, patterns } = req.body;
+  let command = `dicom-convert ${bidsDirectory} ${outputDirectory} --auto_yes`;
   if (patterns) {
     const patternList = patterns.split(',').map(p => p.trim()).join(' ');
     command += ` --qsm_protocol_patterns ${patternList}`;
@@ -120,8 +122,8 @@ app.get('/dicom-convert', (req, res) => {
 });
 
 app.post('/start-qsmxt', (req, res) => {
-  const { qsmBidsDirectory, premade } = req.body;
-  const command = `qsmxt ${qsmBidsDirectory} qsm --premade ${premade} --auto_yes`;
+  const { qsmBidsDirectory, outputDirectory, premade } = req.body;
+  const command = `qsmxt ${qsmBidsDirectory} ${outputDirectory} --premade ${premade} --auto_yes`;
 
   if (childProcess) {
     res.status(400).send('Process already running');
@@ -168,6 +170,63 @@ app.get('/qsmxt', (req, res) => {
     res.end();
   });
 });
+
+
+const getDirectoryStructure = (dirPath) => {
+    const result = {};
+    const files = fs.readdirSync(dirPath);
+  
+    files.forEach(file => {
+      const filePath = path.join(dirPath, file);
+      const stats = fs.statSync(filePath);
+  
+      if (stats.isDirectory()) {
+        result[file] = getDirectoryStructure(filePath);
+      } else {
+        result[file] = null;  // Mark files with null
+      }
+    });
+  
+    return result;
+  };
+  
+  app.post('/get-directory-structure', (req, res) => {
+    const { directory } = req.body;
+  
+    try {
+      const structure = getDirectoryStructure(directory);
+      res.json(structure);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post('/read-json-file', (req, res) => {
+    const { filePath } = req.body;
+    console.log(`Reading JSON file from: ${filePath}`);
+  
+    try {
+      const data = fs.readFileSync(filePath, 'utf-8');
+      const jsonData = JSON.parse(data);
+      res.json(jsonData);
+    } catch (error) {
+      console.error('Error reading JSON file:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post('/read-nifti-file', (req, res) => {
+    const { filePath } = req.body;
+    const absolutePath = path.resolve(filePath);
+    if (fs.existsSync(absolutePath)) {
+      const relativePath = path.relative('/', absolutePath);
+      res.json({ url: `http://localhost:${PORT}/files/${relativePath}` });
+    } else {
+      res.status(404).send('File not found');
+    }
+  });
+
+  app.use('/files', express.static(path.resolve('/')));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
