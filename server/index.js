@@ -3,8 +3,12 @@ const cors = require('cors');
 const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
+const extract = require('extract-zip');
+const tar = require('tar-fs');
 
 const app = express();
+const upload = multer({ dest: 'uploads/' });
 let childProcess;
 
 app.use(cors());
@@ -14,6 +18,7 @@ app.get('/', (req, res) => {
   res.send('Server is running');
 });
 
+// DICOM Sort Route
 app.post('/start-dicom-sort', (req, res) => {
   const { directory, outputDirectory, checkAllFiles } = req.body;
   let command = `dicom-sort ${directory} ${outputDirectory}`;
@@ -67,6 +72,7 @@ app.get('/dicom-sort', (req, res) => {
   });
 });
 
+// DICOM Convert Route
 app.post('/start-dicom-convert', (req, res) => {
   const { bidsDirectory, outputDirectory, patterns } = req.body;
   let command = `dicom-convert ${bidsDirectory} ${outputDirectory} --auto_yes`;
@@ -121,6 +127,7 @@ app.get('/dicom-convert', (req, res) => {
   });
 });
 
+// QSMxT Route
 app.post('/start-qsmxt', (req, res) => {
   const { qsmBidsDirectory, outputDirectory, premade } = req.body;
   const command = `qsmxt ${qsmBidsDirectory} ${outputDirectory} --premade ${premade} --auto_yes`;
@@ -171,6 +178,7 @@ app.get('/qsmxt', (req, res) => {
   });
 });
 
+// Directory Structure Route
 const getDirectoryStructure = (dirPath) => {
   const result = {};
   const files = fs.readdirSync(dirPath);
@@ -200,6 +208,7 @@ app.post('/get-directory-structure', (req, res) => {
   }
 });
 
+// Read Text File Route
 app.post('/read-text-file', (req, res) => {
   const { filePath } = req.body;
   console.log(`Reading text file from: ${filePath}`);
@@ -213,6 +222,7 @@ app.post('/read-text-file', (req, res) => {
   }
 });
 
+// Read NIfTI File Route
 app.post('/read-nifti-file', (req, res) => {
   const { filePath } = req.body;
   const absolutePath = path.resolve(filePath);
@@ -226,6 +236,58 @@ app.post('/read-nifti-file', (req, res) => {
 
 app.use('/files', express.static(path.resolve('/')));
 
+// Create the upload directory if it doesn't exist
+// Create the upload directory if it doesn't exist
+const ensureUploadDirectory = () => {
+  const uploadDir = path.resolve(__dirname, 'uploads');
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+  }
+};
+
+// Upload and Extract Compressed DICOMs Route
+app.post('/upload-dicoms', upload.single('dicomArchive'), (req, res) => {
+  ensureUploadDirectory();
+  console.log(`Receiving DICOM archive...`);
+  const file = req.file;
+  if (!file) {
+    return res.status(400).send('No file uploaded');
+  }
+
+  const uploadPath = path.resolve(__dirname, 'uploads', file.filename);
+  const extractPath = path.resolve(__dirname, 'uploads', 'dicoms');
+
+  fs.renameSync(file.path, uploadPath);
+
+  const extractFile = () => {
+    if (file.originalname.endsWith('.zip')) {
+      extract(uploadPath, { dir: extractPath })
+        .then(() => {
+          fs.unlinkSync(uploadPath); // Remove the compressed file after extraction
+          res.json({ extractedPath: extractPath });
+        })
+        .catch(err => {
+          console.error('Extraction error:', err);
+          res.status(500).send('Error extracting file');
+        });
+    } else if (file.originalname.endsWith('.tar')) {
+      fs.createReadStream(uploadPath)
+        .pipe(tar.extract(extractPath))
+        .on('finish', () => {
+          fs.unlinkSync(uploadPath); // Remove the compressed file after extraction
+          res.json({ extractedPath: extractPath });
+        })
+        .on('error', (err) => {
+          console.error('Extraction error:', err);
+          res.status(500).send('Error extracting file');
+        });
+    } else {
+      res.status(400).send('Unsupported file format');
+    }
+  };
+
+  extractFile();
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
