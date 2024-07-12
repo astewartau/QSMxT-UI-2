@@ -8,7 +8,6 @@ const ViewDirectory = () => {
   const [selectedFile, setSelectedFile] = useState('');
   const [jsonContent, setJsonContent] = useState(null);
   const [niiContent, setNiiContent] = useState('');
-  const [canvasCreated, setCanvasCreated] = useState(false);
   const niivueRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -18,46 +17,45 @@ const ViewDirectory = () => {
       niivueRef.current.attachToCanvas(canvasRef.current);
       console.log('NiiVue initialized and attached to canvas');
     }
-  }, [canvasRef]);
+  }, []);
 
-  useEffect(() => {
-    if (canvasCreated) {
-      initializeNiivue();
-    }
-  }, [canvasCreated, initializeNiivue]);
+  const loadNiftiFile = useCallback(async () => {
+    if (niiContent && niivueRef.current) {
+      console.log(`Fetching NIfTI content from: ${niiContent}`);
+      setJsonContent(null); // clear JSON content
 
-  useEffect(() => {
-    const loadNiftiFile = async () => {
-      if (niiContent && niivueRef.current) {
-        console.log(`Fetching NIfTI content from: ${niiContent}`);
-        setJsonContent(null); // clear JSON content
-
-        try {
-          // Unload current volume if any
-          if (niivueRef.current.volumes.length > 0) {
-            niivueRef.current.removeVolume(niivueRef.current.volumes[0]);
-            console.log('Current volume removed');
-          }
-
-          const response = await axios.post('http://localhost:5000/read-nifti-file', { filePath: niiContent });
-          const url = response.data.url;
-          console.log(`NIfTI file URL: ${url}`);
-
-          const nvImage = await NVImage.loadFromUrl({ url });
-          console.log('Loaded NVImage:', nvImage);
-
-          niivueRef.current.addVolume(nvImage);
-          console.log('Volume loaded');
-          niivueRef.current.setSliceType(niivueRef.current.sliceTypeMultiplanar);
-        } catch (error) {
-          console.error('Error reading NIfTI file:', error);
-          setNiiContent('');
+      try {
+        // Unload current volume if any
+        if (niivueRef.current.volumes.length > 0) {
+          niivueRef.current.removeVolume(niivueRef.current.volumes[0]);
+          console.log('Current volume removed');
         }
-      }
-    };
 
-    loadNiftiFile();
+        const response = await axios.post('http://localhost:5000/read-nifti-file', { filePath: niiContent });
+        const url = response.data.url;
+        console.log(`NIfTI file URL: ${url}`);
+
+        const nvImage = await NVImage.loadFromUrl({ url });
+        console.log('Loaded NVImage:', nvImage);
+
+        niivueRef.current.addVolume(nvImage);
+        console.log('Volume loaded');
+        niivueRef.current.setSliceType(niivueRef.current.sliceTypeMultiplanar);
+      } catch (error) {
+        console.error('Error reading NIfTI file:', error);
+        setNiiContent('');
+      }
+    }
   }, [niiContent]);
+
+  useEffect(() => {
+    if (niiContent) {
+      if (!niivueRef.current) {
+        initializeNiivue();
+      }
+      loadNiftiFile();
+    }
+  }, [niiContent, initializeNiivue, loadNiftiFile]);
 
   const handleInputChange = (event) => {
     setDirectory(event.target.value);
@@ -98,8 +96,6 @@ const ViewDirectory = () => {
     } else if (fullPath.endsWith('.nii') || fullPath.endsWith('.nii.gz')) {
       setJsonContent(null);
       setNiiContent(fullPath);
-      setCanvasCreated(false); // Trigger canvas recreation
-      setCanvasCreated(true);
     } else {
       setJsonContent(null);
       setNiiContent('');

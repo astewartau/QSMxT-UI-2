@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { exec, execSync } = require('child_process');
+const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
