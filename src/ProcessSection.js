@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
 const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, children }) => {
   const [inputValue, setInputValue] = useState('');
@@ -18,6 +19,19 @@ const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, childre
       eventSource.close();
     }
     onSubmit(inputValue, outputValue, setEventSource);
+  };
+
+  const handleStop = () => {
+    axios.post('http://localhost:5000/stop-process')
+      .then(response => {
+        console.log(response.data);
+        if (eventSource) {
+          eventSource.close();
+        }
+      })
+      .catch(error => {
+        console.error('Error stopping process:', error);
+      });
   };
 
   return (
@@ -43,6 +57,7 @@ const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, childre
       </label>
       {children}
       <button onClick={handleSubmit}>Start</button>
+      <button onClick={handleStop}>Stop</button>
       <pre>{log}</pre>
     </div>
   );

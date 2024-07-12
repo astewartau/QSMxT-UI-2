@@ -3,48 +3,43 @@ import ProcessSection from './ProcessSection';
 import { startProcess } from './utils';
 import { AppContext } from './AppContext';
 
-const QSMxT = () => {
-  const { qsmxtLog, setQsmxtLog, qsmxtEventSource, setQsmxtEventSource } = useContext(AppContext);
-  const [mode, setMode] = useState('local');
+const RunQSMxT = ({ container }) => {
+  const { qsmLog, setQsmLog, qsmEventSource, setQsmEventSource } = useContext(AppContext);
+  const [premade, setPremade] = useState('gre');
 
-  const handleStartQSMxT = (qsmBidsDirectory, outputDirectory, premade) => {
+  const handleStartQsmxt = (qsmBidsDirectory, outputDirectory) => {
     startProcess(
       'http://localhost:5000/start-qsmxt',
-      { qsmBidsDirectory, outputDirectory, premade, mode },
-      setQsmxtLog,
-      setQsmxtEventSource,
-      qsmxtEventSource
+      { qsmBidsDirectory, outputDirectory, premade: "default", container },
+      setQsmLog,
+      setQsmEventSource,
+      qsmEventSource
     );
   };
 
   return (
     <ProcessSection
-      title="QSMxT"
-      inputLabel="QSM BIDS directory"
+      title="Run QSMxT"
+      inputLabel="BIDS directory"
       outputLabel="Output directory"
-      onSubmit={handleStartQSMxT}
-      log={qsmxtLog}
+      onSubmit={handleStartQsmxt}
+      log={qsmLog}
     >
-      <label>
-        Premade:
-        <select>
-          <option value="gre">gre</option>
-          <option value="epi">epi</option>
-          <option value="fast">fast</option>
-          <option value="bet">bet</option>
-          <option value="nextqsm">nextqsm</option>
-          <option value="body">body</option>
-        </select>
-      </label>
-      <label>
-        Mode:
-        <select value={mode} onChange={(e) => setMode(e.target.value)}>
-          <option value="local">Local</option>
-          <option value="container">Container</option>
-        </select>
-      </label>
+      <div>
+        <label>
+          Premade:
+          <select value={premade} onChange={(e) => setPremade(e.target.value)}>
+            <option value="gre">GRE</option>
+            <option value="epi">EPI</option>
+            <option value="fast">FAST</option>
+            <option value="bet">BET</option>
+            <option value="nextqsm">NEXTQSM</option>
+            <option value="body">BODY</option>
+          </select>
+        </label>
+      </div>
     </ProcessSection>
   );
 };
 
-export default QSMxT;
+export default RunQSMxT;
