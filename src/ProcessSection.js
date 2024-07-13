@@ -10,7 +10,7 @@ const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, childre
       console.log('EventSource initialized'); // Debug message
       eventSource.onmessage = (e) => {
         console.log('Event Source Message:', e.data); // Debug message
-        if (e.data.includes('Success') || e.data.includes('Error') || e.data.includes('Process exited with code')) {
+        if (e.data.includes('Process exited with code')) {
           console.log('Process finished or error occurred, closing Event Source'); // Debug message
           setIsProcessRunning(false);
           if (eventSource) {

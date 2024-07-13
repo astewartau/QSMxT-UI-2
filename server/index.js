@@ -91,11 +91,6 @@ app.get('/dicom-sort', (req, res) => {
 
     childProcess.on('close', (code) => {
         sendData(`Process exited with code ${code}`);
-        if (code === 0) {
-            sendData('Success: DICOMs sorted successfully');
-        } else {
-            sendData(`Error: Process exited with code ${code}`);
-        }
         childProcess = null;
         res.end();
     });
@@ -143,11 +138,6 @@ app.get('/dicom-convert', (req, res) => {
 
     childProcess.on('close', (code) => {
         sendData(`Process exited with code ${code}`);
-        if (code === 0) {
-            sendData('Success: DICOMs converted to BIDS successfully');
-        } else {
-            sendData(`Error: Process exited with code ${code}`);
-        }
         childProcess = null;
         res.end();
     });
@@ -191,11 +181,6 @@ app.get('/qsmxt', (req, res) => {
 
     childProcess.on('close', (code) => {
         sendData(`Process exited with code ${code}`);
-        if (code === 0) {
-            sendData('Success: QSMxT process completed successfully');
-        } else {
-            sendData(`Error: Process exited with code ${code}`);
-        }
         childProcess = null;
         res.end();
     });

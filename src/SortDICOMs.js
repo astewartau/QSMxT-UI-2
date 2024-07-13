@@ -5,7 +5,7 @@ import { AppContext } from './AppContext';
 import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 
-const SortDICOMs = () => {
+const SortDICOMs = ({ container }) => {
   const { sortLog, setSortLog, sortEventSource, setSortEventSource } = useContext(AppContext);
   const [dicomDirectory, setDicomDirectory] = useState('');
   const [outputDirectory, setOutputDirectory] = useState('');
@@ -20,7 +20,7 @@ const SortDICOMs = () => {
     setIsProcessRunning(true);
     startProcess(
       'http://localhost:5000/start-dicom-sort',
-      { directory, outputDirectory, checkAllFiles: true },
+      { directory, outputDirectory, checkAllFiles: true, container },
       setSortLog,
       setSortEventSource,
       sortEventSource,

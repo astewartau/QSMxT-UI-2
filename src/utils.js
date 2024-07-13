@@ -10,7 +10,7 @@ export const startProcess = (url, data, setLog, setEventSource, currentEventSour
 
   axios.post(url, data)
     .then(response => {
-      console.log('Process started'); // Debug message
+      setLog('Process started\n');
       const newEventSource = new EventSource(`${url.replace('start-', '')}`);
       console.log('New EventSource created:', newEventSource); // Debug message
       setEventSource(newEventSource);
@@ -19,12 +19,11 @@ export const startProcess = (url, data, setLog, setEventSource, currentEventSour
         console.log('Event Source Message:', event.data); // Debug message
         setLog(prevLog => prevLog + event.data + '\n');
 
-        if (event.data.includes('Success') || event.data.includes('Error')) {
-          console.log('Success or Error received, closing EventSource'); // Debug message
+        if (event.data.includes('Process exited')) {
+          console.log('Process exited, closing EventSource'); // Debug message
           newEventSource.close();
           setEventSource(null);
           setIsProcessRunning(false); // Update the running state
-          setLog(prevLog => prevLog + 'Connection closed\n');
         }
       };
 
