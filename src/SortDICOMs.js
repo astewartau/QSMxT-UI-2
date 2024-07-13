@@ -1,18 +1,26 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext, useState } from 'react';  // Added useState import
 import ProcessSection from './ProcessSection';
 import { startProcess } from './utils';
-import { AppContext } from './AppContext';
+import { SortDICOMsContext } from './SortDICOMsContext';
 import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 
 const SortDICOMs = ({ container }) => {
-  const { sortLog, setSortLog, sortEventSource, setSortEventSource } = useContext(AppContext);
-  const [dicomDirectory, setDicomDirectory] = useState('');
-  const [outputDirectory, setOutputDirectory] = useState('');
+  const { 
+    dicomDirectory, 
+    setDicomDirectory, 
+    outputDirectory, 
+    setOutputDirectory, 
+    isProcessRunning, 
+    setIsProcessRunning, 
+    sortLog, 
+    setSortLog, 
+    sortEventSource, 
+    setSortEventSource 
+  } = useContext(SortDICOMsContext);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileName, setFileName] = useState('');
-  const [isProcessRunning, setIsProcessRunning] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
 
   const handleStartSort = (directory, outputDirectory) => {
