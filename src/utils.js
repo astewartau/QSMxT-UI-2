@@ -4,7 +4,7 @@ export const startProcess = (url, data, setLog, setEventSource, currentEventSour
   setLog('');
 
   if (currentEventSource) {
-    console.log('Closing current EventSource'); // Debug message
+    console.log('Closing current EventSource');
     currentEventSource.close();
   }
 
@@ -12,18 +12,26 @@ export const startProcess = (url, data, setLog, setEventSource, currentEventSour
     .then(response => {
       setLog('Process started\n');
       const newEventSource = new EventSource(`${url.replace('start-', '')}`);
-      console.log('New EventSource created:', newEventSource); // Debug message
+      console.log('New EventSource created:', newEventSource);
       setEventSource(newEventSource);
 
       newEventSource.onmessage = (event) => {
-        console.log('Event Source Message:', event.data); // Debug message
-        setLog(prevLog => prevLog + event.data + '\n');
+        console.log('Event Source Message:', event.data);
+        let formattedData = event.data;
+
+        if (formattedData.includes('[WARNING]')) {
+          formattedData = `<span class="warning">${formattedData}</span>`;
+        } else if (formattedData.includes('[ERROR]')) {
+          formattedData = `<span class="error">${formattedData}</span>`;
+        }
+
+        setLog(prevLog => prevLog + formattedData + '\n');
 
         if (event.data.includes('Process exited')) {
-          console.log('Process exited, closing EventSource'); // Debug message
+          console.log('Process exited, closing EventSource');
           newEventSource.close();
           setEventSource(null);
-          setIsProcessRunning(false); // Update the running state
+          setIsProcessRunning(false);
         }
       };
 
@@ -39,7 +47,7 @@ export const startProcess = (url, data, setLog, setEventSource, currentEventSour
 
         console.error('EventSource error:', event);
         setLog(prevLog => prevLog + `Error: ${errorMessage}\n`);
-        setIsProcessRunning(false); // Update the running state
+        setIsProcessRunning(false);
 
         if (event.target.readyState === EventSource.CLOSED) {
           newEventSource.close();
@@ -48,15 +56,15 @@ export const startProcess = (url, data, setLog, setEventSource, currentEventSour
       };
 
       newEventSource.onclose = () => {
-        console.log('Event Source Closed'); // Debug message
+        console.log('Event Source Closed');
         setLog(prevLog => prevLog + 'Connection closed\n');
         setEventSource(null);
-        setIsProcessRunning(false); // Update the running state
+        setIsProcessRunning(false);
       };
     })
     .catch(error => {
       console.error('Axios request failed:', error);
       setLog(`Error: ${error.message || 'Request failed'}\n`);
-      setIsProcessRunning(false); // Update the running state
+      setIsProcessRunning(false);
     });
 };

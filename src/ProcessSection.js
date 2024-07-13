@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './spinner.css'; // Make sure to import the CSS file for the spinner
+import './styles.css'; // Import the styles for warning and error messages
 
 const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, children, inputValue, setInputValue, outputValue, setOutputValue, isProcessRunning, setIsProcessRunning }) => {
   const [eventSource, setEventSource] = useState(null);
 
   useEffect(() => {
     if (eventSource) {
-      console.log('EventSource initialized'); // Debug message
+      console.log('EventSource initialized');
       eventSource.onmessage = (e) => {
-        console.log('Event Source Message:', e.data); // Debug message
+        console.log('Event Source Message:', e.data);
         if (e.data.includes('Process exited with code')) {
-          console.log('Process finished or error occurred, closing Event Source'); // Debug message
+          console.log('Process finished or error occurred, closing Event Source');
           setIsProcessRunning(false);
           if (eventSource) {
             eventSource.close();
@@ -20,7 +21,7 @@ const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, childre
         }
       };
       eventSource.onerror = (e) => {
-        console.error('Event Source Error:', e); // Debug message
+        console.error('Event Source Error:', e);
         setIsProcessRunning(false);
         if (eventSource) {
           eventSource.close();
@@ -46,22 +47,22 @@ const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, childre
 
   const handleSubmit = () => {
     if (inputValue && outputValue) {
-      console.log('Starting process with:', inputValue, outputValue); // Debug message
+      console.log('Starting process with:', inputValue, outputValue);
       if (eventSource) {
         eventSource.close();
       }
       setIsProcessRunning(true);
       onSubmit(inputValue, outputValue, setEventSource);
     } else {
-      console.log('Input or output value missing'); // Debug message
+      console.log('Input or output value missing');
     }
   };
 
   const handleStop = () => {
-    console.log('Stopping process'); // Debug message
+    console.log('Stopping process');
     axios.post('http://localhost:5000/stop-process')
       .then(response => {
-        console.log('Stop process response:', response.data); // Debug message
+        console.log('Stop process response:', response.data);
         if (eventSource) {
           eventSource.close();
           setEventSource(null);
@@ -99,7 +100,7 @@ const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, childre
       <button onClick={handleSubmit} disabled={!inputValue || !outputValue || isProcessRunning}>Start</button>
       <button onClick={handleStop} disabled={!isProcessRunning}>Stop</button>
       {isProcessRunning && <div className="spinner"></div>}
-      <pre>{log}</pre>
+      <pre dangerouslySetInnerHTML={{ __html: log }}></pre>
     </div>
   );
 };

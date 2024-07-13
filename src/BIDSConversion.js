@@ -1,19 +1,32 @@
 import React, { useContext } from 'react';
 import ProcessSection from './ProcessSection';
 import { startProcess } from './utils';
-import { AppContext } from './AppContext';
+import { BIDSConversionContext } from './BIDSConversionContext';  // Import the BIDSConversionContext
 
 const BIDSConversion = () => {
-  const { convertLog, setConvertLog, convertEventSource, setConvertEventSource } = useContext(AppContext);
+  const { 
+    bidsDirectory, 
+    setBidsDirectory, 
+    outputDirectory, 
+    setOutputDirectory, 
+    patterns, 
+    setPatterns, 
+    isProcessRunning, 
+    setIsProcessRunning, 
+    convertLog, 
+    setConvertLog, 
+    convertEventSource, 
+    setConvertEventSource 
+  } = useContext(BIDSConversionContext);
 
-  const handleStartConvert = (bidsDirectory, outputDirectory) => {
-    const patterns = document.getElementById('patterns').value;
+  const handleStartConvert = () => {
     startProcess(
       'http://localhost:5000/start-dicom-convert',
       { bidsDirectory, outputDirectory, patterns },
       setConvertLog,
       setConvertEventSource,
-      convertEventSource
+      convertEventSource,
+      setIsProcessRunning
     );
   };
 
@@ -24,13 +37,20 @@ const BIDSConversion = () => {
       outputLabel="Output directory"
       onSubmit={handleStartConvert}
       log={convertLog}
+      inputValue={bidsDirectory}
+      setInputValue={setBidsDirectory}
+      outputValue={outputDirectory}
+      setOutputValue={setOutputDirectory}
+      isProcessRunning={isProcessRunning}
+      setIsProcessRunning={setIsProcessRunning}
     >
       <label>
         QSM Protocol Patterns:
         <input 
           type="text" 
           placeholder="Enter patterns separated by commas" 
-          id="patterns"
+          value={patterns}
+          onChange={(e) => setPatterns(e.target.value)}
         />
       </label>
     </ProcessSection>

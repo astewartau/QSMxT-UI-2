@@ -1,19 +1,32 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext } from 'react';
 import ProcessSection from './ProcessSection';
 import { startProcess } from './utils';
-import { AppContext } from './AppContext';
+import { RunQSMxTContext } from './RunQSMxTContext';  // Import the RunQSMxTContext
 
 const RunQSMxT = ({ container }) => {
-  const { qsmLog, setQsmLog, qsmEventSource, setQsmEventSource } = useContext(AppContext);
-  const [premade, setPremade] = useState('gre');
+  const { 
+    qsmBidsDirectory, 
+    setQsmBidsDirectory, 
+    outputDirectory, 
+    setOutputDirectory, 
+    premade, 
+    setPremade, 
+    isProcessRunning, 
+    setIsProcessRunning, 
+    qsmLog, 
+    setQsmLog, 
+    qsmEventSource, 
+    setQsmEventSource 
+  } = useContext(RunQSMxTContext);
 
-  const handleStartQsmxt = (qsmBidsDirectory, outputDirectory) => {
+  const handleStartQsmxt = () => {
     startProcess(
       'http://localhost:5000/start-qsmxt',
-      { qsmBidsDirectory, outputDirectory, premade: "default", container },
+      { qsmBidsDirectory, outputDirectory, premade, container },
       setQsmLog,
       setQsmEventSource,
-      qsmEventSource
+      qsmEventSource,
+      setIsProcessRunning
     );
   };
 
@@ -24,6 +37,12 @@ const RunQSMxT = ({ container }) => {
       outputLabel="Output directory"
       onSubmit={handleStartQsmxt}
       log={qsmLog}
+      inputValue={qsmBidsDirectory}
+      setInputValue={setQsmBidsDirectory}
+      outputValue={outputDirectory}
+      setOutputValue={setOutputDirectory}
+      isProcessRunning={isProcessRunning}
+      setIsProcessRunning={setIsProcessRunning}
     >
       <div>
         <label>

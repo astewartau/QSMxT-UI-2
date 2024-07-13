@@ -1,0 +1,9 @@
+.warning {
+    color: rgb(194, 119, 0);
+    font-weight: bold;
+}
+
+.error {
+    color: rgb(154, 0, 0);
+    font-weight: bold;
+}
