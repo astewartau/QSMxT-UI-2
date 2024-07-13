@@ -9,23 +9,28 @@ const SortDICOMs = () => {
   const { sortLog, setSortLog, sortEventSource, setSortEventSource } = useContext(AppContext);
   const [dicomDirectory, setDicomDirectory] = useState('');
   const [outputDirectory, setOutputDirectory] = useState('');
-  const [uploadedDir, setUploadedDir] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [isProcessRunning, setIsProcessRunning] = useState(false);
+  const [uploadComplete, setUploadComplete] = useState(false);
 
   const handleStartSort = (directory, outputDirectory) => {
+    console.log('Starting DICOM sort with directories:', directory, outputDirectory); // Debug message
+    setIsProcessRunning(true);
     startProcess(
       'http://localhost:5000/start-dicom-sort',
       { directory, outputDirectory, checkAllFiles: true },
       setSortLog,
       setSortEventSource,
-      sortEventSource
+      sortEventSource,
+      setIsProcessRunning
     );
   };
 
   const onDrop = (acceptedFiles) => {
     const file = acceptedFiles[0];
+    console.log('File dropped:', file); // Debug message
     setSelectedFile(file);
     setFileName(file.name);
     handleFileUpload(file);
@@ -36,6 +41,7 @@ const SortDICOMs = () => {
     formData.append('dicomArchive', file);
 
     try {
+      console.log('Uploading file:', file.name); // Debug message
       const response = await axios.post('http://localhost:5000/upload-dicoms', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -44,15 +50,18 @@ const SortDICOMs = () => {
           const { loaded, total } = progressEvent;
           const progress = Math.round((loaded * 100) / total);
           setUploadProgress(progress);
-          console.log(`Upload Progress: ${progress}%`);
+          console.log(`Upload Progress: ${progress}%`); // Debug message
         },
       });
-      setUploadedDir(response.data.extractedPath);
+      console.log('Upload response:', response.data); // Debug message
       setDicomDirectory(response.data.extractedPath);
+      setOutputDirectory(`${response.data.extractedPath}-sorted`);
       setUploadProgress(0); // Reset progress after successful upload
+      setUploadComplete(true);
     } catch (error) {
       console.error('Error uploading file:', error);
       setUploadProgress(0); // Reset progress on error
+      setUploadComplete(false);
     }
   };
 
@@ -67,6 +76,10 @@ const SortDICOMs = () => {
       log={sortLog}
       inputValue={dicomDirectory}
       setInputValue={setDicomDirectory}
+      outputValue={outputDirectory}
+      setOutputValue={setOutputDirectory}
+      isProcessRunning={isProcessRunning}
+      setIsProcessRunning={setIsProcessRunning}
     >
       <div>
         <input 
@@ -83,13 +96,8 @@ const SortDICOMs = () => {
           <p>{fileName || 'Drag \'n\' drop a compressed DICOM folder (.zip or .tar) here, or click to select one'}</p>
         )}
         {uploadProgress > 0 && <p>Upload Progress: {uploadProgress}%</p>}
+        {uploadComplete && <p>✔ Upload complete</p>}
       </div>
-      {uploadedDir && (
-        <div>
-          <strong>Extracted DICOM directory:</strong>
-          <p>{uploadedDir}</p>
-        </div>
-      )}
     </ProcessSection>
   );
 };
