@@ -6,6 +6,8 @@ const fs = require('fs');
 const multer = require('multer');
 const extract = require('extract-zip');
 const tar = require('tar-fs');
+const csv = require('csv-parser');
+const { parse } = require('json2csv');
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
@@ -338,6 +340,44 @@ app.post('/upload-dicoms', upload.single('dicomArchive'), (req, res) => {
     };
 
     extractFile();
+});
+
+// Endpoint to fetch CSV file
+// Endpoint to fetch CSV file
+app.get('/fetch-csv', (req, res) => {
+    const { filePath } = req.query;
+    const absFilePath = toAbsolutePath(filePath);
+
+    console.log('Fetching CSV file from:', absFilePath);
+
+    if (fs.exists(absFilePath, (exists) => {
+        if (exists) {
+            const results = [];
+            fs.createReadStream(absFilePath)
+                .pipe(csv())
+                .on('data', (data) => results.push(data))
+                .on('end', () => {
+                    console.log('CSV Data:', results);
+                    res.json(results);
+                });
+        } else {
+            res.status(404).send('CSV file not found');
+        }
+    }));
+});
+
+// Endpoint to save edited CSV file
+app.post('/save-csv', (req, res) => {
+    const { filePath, data } = req.body;
+    const absFilePath = toAbsolutePath(filePath);
+
+    try {
+        const csvData = parse(data);
+        fs.writeFileSync(absFilePath, csvData);
+        res.send('CSV file saved successfully');
+    } catch (error) {
+        res.status(500).send('Error saving CSV file');
+    }
 });
 
 const PORT = process.env.PORT || 5000;

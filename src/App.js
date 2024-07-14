@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import SortDICOMs from './SortDICOMs';
 import DICOMToBIDSConversion from './DICOMToBIDSConversion';
-import NIfTIToBIDSConversion from './NIfTIToBIDSConversion';  // Import the NIfTIConversion component
 import RunQSMxT from './RunQSMxT';
 import ViewDirectory from './ViewDirectory';
+import NIfTIToBIDSConversion from './NIfTIToBIDSConversion';  // Import NIfTIToBIDSConversion
 import { AppProvider } from './AppContext';
 import { SortDICOMsProvider } from './SortDICOMsContext';  // Import the SortDICOMsProvider
-import { DICOMToBIDSConversionProvider } from './DICOMToBIDSConversionContext';  // Import the DICOMToBIDSConversionProvider
+import { DICOMToBIDSConversionProvider } from './DICOMToBIDSConversionContext';  // Import the BIDSConversionProvider
 import { RunQSMxTProvider } from './RunQSMxTContext';  // Import the RunQSMxTProvider
-import { NIfTIToBIDSConversionProvider } from './NIfTIToBIDSConversionContext';  // Import the NIfTIConversionProvider
+import { NIfTIToBIDSConversionProvider } from './NIfTIToBIDSConversionContext';  // Import the NIfTIToBIDSConversionProvider
 
 const containerOptions = [
   { label: "Local", value: "" },
@@ -24,7 +24,7 @@ const App = () => {
     <AppProvider>
       <SortDICOMsProvider>
         <DICOMToBIDSConversionProvider>
-          <RunQSMxTProvider>  {/* Wrap the routes with RunQSMxTProvider */}
+          <RunQSMxTProvider>
             <NIfTIToBIDSConversionProvider>  {/* Wrap the routes with NIfTIToBIDSConversionProvider */}
               <Router>
                 <div className="App">
@@ -37,20 +37,20 @@ const App = () => {
                         <Link to="/dicom-to-bids-conversion">DICOM to BIDS Conversion</Link>
                       </li>
                       <li style={{ margin: '0 10px' }}>
-                        <Link to="/nifti-to-bids-conversion">NIfTI to BIDS Conversion</Link>
-                      </li>
-                      <li style={{ margin: '0 10px' }}>
                         <Link to="/run-qsmxt">Run QSMxT</Link>
                       </li>
                       <li style={{ margin: '0 10px' }}>
                         <Link to="/view">View</Link>
                       </li>
+                      <li style={{ margin: '0 10px' }}>
+                        <Link to="/nifti-to-bids-conversion">NIfTI to BIDS Conversion</Link>
+                      </li>
                     </ul>
                     <div style={{ marginLeft: 'auto' }}>
                       <label htmlFor="containerSelect">Container:</label>
-                      <select
-                        id="containerSelect"
-                        value={selectedContainer}
+                      <select 
+                        id="containerSelect" 
+                        value={selectedContainer} 
                         onChange={(e) => setSelectedContainer(e.target.value)}
                       >
                         {containerOptions.map(option => (

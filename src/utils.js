@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const startProcess = (url, data, setLog, setEventSource, currentEventSource, setIsProcessRunning) => {
+export const startProcess = (url, data, setLog, setEventSource, currentEventSource, setIsProcessRunning, handleLog) => {
   setLog('');
 
   if (currentEventSource) {
@@ -26,6 +26,10 @@ export const startProcess = (url, data, setLog, setEventSource, currentEventSour
         }
 
         setLog(prevLog => prevLog + formattedData + '\n');
+        
+        if (handleLog) {
+          handleLog(formattedData);
+        }
 
         if (event.data.includes('Process exited')) {
           console.log('Process exited, closing EventSource');
