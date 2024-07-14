@@ -143,6 +143,50 @@ app.get('/dicom-convert', (req, res) => {
     });
 });
 
+// NIfTI Convert Route
+app.post('/start-nifti-convert', (req, res) => {
+    const { niftiDirectory, outputDirectory, container } = req.body;
+    const absNiftiDirectory = toAbsolutePath(niftiDirectory);
+    const absOutputDirectory = toAbsolutePath(outputDirectory);
+
+    const command = `nifti-convert ${absNiftiDirectory} ${absOutputDirectory}`;
+
+    runCommand(command, container, res);
+});
+
+
+app.get('/nifti-convert', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    if (!childProcess) {
+        res.write('data: No process running\n\n');
+        res.end();
+        return;
+    }
+
+    const sendData = (data) => {
+        const lines = data.split('\n');
+        lines.forEach(line => {
+            if (line) {
+                res.write(`data: ${line}\n\n`);
+            }
+        });
+        res.flushHeaders();
+    };
+
+    childProcess.stdout.on('data', sendData);
+    childProcess.stderr.on('data', sendData);
+
+    childProcess.on('close', (code) => {
+        sendData(`Process exited with code ${code}`);
+        childProcess = null;
+        res.end();
+    });
+});
+
 // QSMxT Route
 app.post('/start-qsmxt', (req, res) => {
     const { qsmBidsDirectory, outputDirectory, premade, container } = req.body;

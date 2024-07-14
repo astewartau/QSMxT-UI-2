@@ -1,8 +1,8 @@
 import React, { createContext, useState } from 'react';
 
-const BIDSConversionContext = createContext();
+const DICOMToBIDSConversionContext = createContext();
 
-const BIDSConversionProvider = ({ children }) => {
+const DICOMToBIDSConversionProvider = ({ children }) => {
   const [bidsDirectory, setBidsDirectory] = useState('');
   const [outputDirectory, setOutputDirectory] = useState('');
   const [patterns, setPatterns] = useState('');
@@ -11,7 +11,7 @@ const BIDSConversionProvider = ({ children }) => {
   const [convertEventSource, setConvertEventSource] = useState(null);
 
   return (
-    <BIDSConversionContext.Provider value={{
+    <DICOMToBIDSConversionContext.Provider value={{
       bidsDirectory,
       setBidsDirectory,
       outputDirectory,
@@ -26,8 +26,8 @@ const BIDSConversionProvider = ({ children }) => {
       setConvertEventSource,
     }}>
       {children}
-    </BIDSConversionContext.Provider>
+    </DICOMToBIDSConversionContext.Provider>
   );
 };
 
-export { BIDSConversionContext, BIDSConversionProvider };
+export { DICOMToBIDSConversionContext, DICOMToBIDSConversionProvider };

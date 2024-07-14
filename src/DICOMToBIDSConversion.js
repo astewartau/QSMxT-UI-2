@@ -1,9 +1,9 @@
 import React, { useContext } from 'react';
 import ProcessSection from './ProcessSection';
 import { startProcess } from './utils';
-import { BIDSConversionContext } from './BIDSConversionContext';  // Import the BIDSConversionContext
+import { DICOMToBIDSConversionContext } from './DICOMToBIDSConversionContext';  // Import the DICOMToBIDSConversionContext
 
-const BIDSConversion = () => {
+const DICOMToBIDSConversion = () => {
   const { 
     bidsDirectory, 
     setBidsDirectory, 
@@ -17,7 +17,7 @@ const BIDSConversion = () => {
     setConvertLog, 
     convertEventSource, 
     setConvertEventSource 
-  } = useContext(BIDSConversionContext);
+  } = useContext(DICOMToBIDSConversionContext);
 
   const handleStartConvert = () => {
     startProcess(
@@ -57,4 +57,4 @@ const BIDSConversion = () => {
   );
 };
 
-export default BIDSConversion;
+export default DICOMToBIDSConversion;
