@@ -34,16 +34,16 @@ const App = () => {
                         <Link to="/sort-dicoms">Sort DICOMs</Link>
                       </li>
                       <li style={{ margin: '0 10px' }}>
-                        <Link to="/dicom-to-bids-conversion">DICOM to BIDS Conversion</Link>
+                        <Link to="/dicom-to-bids-conversion">DICOM to BIDS</Link>
                       </li>
                       <li style={{ margin: '0 10px' }}>
-                        <Link to="/run-qsmxt">Run QSMxT</Link>
+                        <Link to="/nifti-to-bids-conversion">NIfTI to BIDS</Link>
                       </li>
                       <li style={{ margin: '0 10px' }}>
-                        <Link to="/view">View</Link>
+                        <Link to="/run-qsmxt">QSMxT</Link>
                       </li>
                       <li style={{ margin: '0 10px' }}>
-                        <Link to="/nifti-to-bids-conversion">NIfTI to BIDS Conversion</Link>
+                        <Link to="/view-directory">View Directory</Link>
                       </li>
                     </ul>
                     <div style={{ marginLeft: 'auto' }}>
@@ -66,7 +66,7 @@ const App = () => {
                     <Route path="/dicom-to-bids-conversion" element={<DICOMToBIDSConversion container={selectedContainer} />} />
                     <Route path="/nifti-to-bids-conversion" element={<NIfTIToBIDSConversion container={selectedContainer} />} />
                     <Route path="/run-qsmxt" element={<RunQSMxT container={selectedContainer} />} />
-                    <Route path="/view" element={<ViewDirectory />} />
+                    <Route path="/view-directory" element={<ViewDirectory />} />
                     <Route path="/" element={<SortDICOMs container={selectedContainer} />} />
                   </Routes>
                 </div>
