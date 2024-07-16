@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Niivue, NVImage } from '@niivue/niivue';
 import { useTable } from 'react-table';
 import SplitPane from 'react-split-pane';
+import ReactMarkdown from 'react-markdown';
 import './ViewDirectory.css';
 import TableComponent from './TableComponent';
 
@@ -13,6 +14,8 @@ const ViewDirectory = () => {
   const [selectedFile, setSelectedFile] = useState('');
   const [textContent, setTextContent] = useState(null);
   const [niiContent, setNiiContent] = useState('');
+  const [imageContent, setImageContent] = useState('');
+  const [markdownContent, setMarkdownContent] = useState('');
   const niivueRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -27,10 +30,11 @@ const ViewDirectory = () => {
   const loadNiftiFile = useCallback(async () => {
     if (niiContent && niivueRef.current) {
       console.log(`Fetching NIfTI content from: ${niiContent}`);
-      setTextContent(null); // clear text content
+      setTextContent(null);
+      setImageContent('');
+      setMarkdownContent('');
 
       try {
-        // Unload current volume if any
         if (niivueRef.current.volumes.length > 0) {
           niivueRef.current.removeVolume(niivueRef.current.volumes[0]);
           console.log('Current volume removed');
@@ -70,7 +74,7 @@ const ViewDirectory = () => {
     axios.post('http://localhost:5000/get-directory-structure', { directory })
       .then(response => {
         setStructure(response.data);
-        setCollapsed(generateInitialCollapsedState(response.data)); // Set initial collapsed state
+        setCollapsed(generateInitialCollapsedState(response.data));
       })
       .catch(error => {
         console.error('Error fetching directory structure:', error);
@@ -82,7 +86,7 @@ const ViewDirectory = () => {
     Object.keys(structure).forEach(key => {
       const newPath = `${path}/${key}`;
       if (structure[key] && typeof structure[key] === 'object') {
-        collapsedState[newPath] = true; // Collapse all folders initially
+        collapsedState[newPath] = true;
         collapsedState = { ...collapsedState, ...generateInitialCollapsedState(structure[key], newPath) };
       }
     });
@@ -96,7 +100,33 @@ const ViewDirectory = () => {
 
     if (fullPath.endsWith('.nii') || fullPath.endsWith('.nii.gz')) {
       setTextContent(null);
+      setImageContent('');
+      setMarkdownContent('');
       setNiiContent(fullPath);
+    } else if (fullPath.endsWith('.png') || fullPath.endsWith('.jpg') || fullPath.endsWith('.jpeg') || fullPath.endsWith('.ico')) {
+      setTextContent(null);
+      setNiiContent('');
+      setMarkdownContent('');
+      axios.post('http://localhost:5000/read-image-file', { filePath: fullPath })
+        .then(response => {
+          setImageContent(response.data.url);
+        })
+        .catch(error => {
+          console.error('Error reading image file:', error);
+          setImageContent('');
+        });
+    } else if (fullPath.endsWith('.md') || fullPath.endsWith('README')) {
+      setTextContent(null);
+      setNiiContent('');
+      setImageContent('');
+      axios.post('http://localhost:5000/read-text-file', { filePath: fullPath })
+        .then(response => {
+          setMarkdownContent(response.data.content);
+        })
+        .catch(error => {
+          console.error('Error reading Markdown file:', error);
+          setMarkdownContent('');
+        });
     } else {
       axios.post('http://localhost:5000/read-text-file', { filePath: fullPath })
         .then(response => {
@@ -108,7 +138,9 @@ const ViewDirectory = () => {
           } catch (e) {
             setTextContent(content);
           }
-          setNiiContent(''); // clear NIfTI content
+          setNiiContent('');
+          setImageContent('');
+          setMarkdownContent('');
           if (niivueRef.current) {
             niivueRef.current.removeVolume(niivueRef.current.volumes[0]);
             niivueRef.current = null;
@@ -129,34 +161,48 @@ const ViewDirectory = () => {
     }));
   };
 
-  const renderStructure = (structure, path = '') => {
+  const renderStructure = (structure, path = '', level = 0) => {
+    if (!structure) return null;
+
+    const entries = Object.keys(structure).map(key => ({
+      name: key,
+      isDirectory: structure[key] && typeof structure[key] === 'object',
+      path: `${path}/${key}`
+    }));
+
+    entries.sort((a, b) => {
+      if (a.isDirectory && !b.isDirectory) return -1;
+      if (!a.isDirectory && b.isDirectory) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
     return (
-      <ul>
-        {Object.keys(structure).map(key => {
-          const newPath = `${path}/${key}`;
-          if (structure[key] && typeof structure[key] === 'object') {
+      <ul style={{ paddingLeft: level * 10 }}>
+        {entries.map(entry => {
+          if (entry.isDirectory) {
             return (
-              <li key={newPath}>
-                <div onClick={() => toggleCollapse(newPath)} style={{ cursor: 'pointer' }}>
-                  <strong>{collapsed[newPath] ? '[+]' : '[-]'} {key}</strong>
+              <li key={entry.path}>
+                <div onClick={() => toggleCollapse(entry.path)} style={{ cursor: 'pointer' }}>
+                  <strong>{collapsed[entry.path] ? '[+]' : '[-]'} {entry.name}</strong>
                 </div>
-                {!collapsed[newPath] && renderStructure(structure[key], newPath)}
+                {!collapsed[entry.path] && renderStructure(structure[entry.name], entry.path, level + 1)}
+              </li>
+            );
+          } else {
+            return (
+              <li 
+                key={entry.path} 
+                onClick={() => handleFileClick(entry.path)} 
+                style={{ 
+                  cursor: 'pointer', 
+                  color: selectedFile === `${directory}${entry.path}` ? 'blue' : 'black',
+                  backgroundColor: selectedFile === `${directory}${entry.path}` ? '#e0f7ff' : 'transparent'
+                }}
+              >
+                {entry.name}
               </li>
             );
           }
-          return (
-            <li 
-              key={newPath} 
-              onClick={() => handleFileClick(newPath)} 
-              style={{ 
-                cursor: 'pointer', 
-                color: selectedFile === `${directory}${newPath}` ? 'blue' : 'black',
-                backgroundColor: selectedFile === `${directory}${newPath}` ? '#e0f7ff' : 'transparent'
-              }}
-            >
-              {key}
-            </li>
-          );
         })}
       </ul>
     );
@@ -165,7 +211,7 @@ const ViewDirectory = () => {
   const handleResize = () => {
     try {
       if (niivueRef.current) {
-        niivueRef.current.updateGLVolume(); // Adjust as needed for Niivue
+        niivueRef.current.updateGLVolume();
       }
     } catch (error) {
       console.error('Error during resize:', error);
@@ -200,6 +246,18 @@ const ViewDirectory = () => {
             <div>
               <h2>NIfTI Content</h2>
               <canvas id="gl" ref={canvasRef} width="800" height="600"></canvas>
+            </div>
+          )}
+          {imageContent && (
+            <div>
+              <h2>Image Content</h2>
+              <img src={imageContent} alt="Selected file" style={{ maxWidth: '100%' }} />
+            </div>
+          )}
+          {markdownContent && (
+            <div>
+              <h2>Markdown Content</h2>
+              <ReactMarkdown>{markdownContent}</ReactMarkdown>
             </div>
           )}
         </div>

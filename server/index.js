@@ -288,7 +288,27 @@ app.post('/read-nifti-file', (req, res) => {
     }
 });
 
-app.use('/files', express.static(path.resolve('/')));
+// Read image file route
+app.post('/read-image-file', (req, res) => {
+    const { filePath } = req.body;
+    const absolutePath = path.resolve(filePath);
+    if (fs.existsSync(absolutePath)) {
+        const relativePath = path.relative('/', absolutePath);
+        res.json({ url: `http://localhost:${PORT}/files/${relativePath}` });
+    } else {
+        res.status(404).send('File not found');
+    }
+});
+
+app.use('/files', express.static('/'));
+
+
+app.post('/resolve-path', (req, res) => {
+    const { directory, relativePath } = req.body;
+    const fullPath = path.resolve(directory, relativePath);
+    res.json({ fullPath });
+});
+
 
 // Create the upload directory if it doesn't exist
 const ensureUploadDirectory = () => {
