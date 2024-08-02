@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+# Get the directory of the script
+script_dir="$(cd "$(dirname "$0")"; pwd)"
+
+handle_interrupt(){
+    echo "Interrupt received. Shutting down..."
+    kill "$frontend_pid"
+    kill "$backend_pid"
+    exit
+}
+
+trap handle_interrupt INT
+
+# Kill any existing instances of the servers
+pkill -f "node server/index.js"
+pkill -f "pkill -f "react-app-rewired/scripts/start.js""
+
+# Start backend in a subshell with its working directory
+echo "Starting QSMxT Node API..."
+( cd "${script_dir}" && node server/index.js ) &
+backend_pid=$!
+
+# Wait for the backend to complete setup
+until curl -I http://localhost:5000 >/dev/null 2>&1
+do
+    sleep 1
+done
+
+# Start frontend in a subshell with its working directory
+echo "Starting QSMxT frontend interface..."
+( cd "${script_dir}" && npm start ) &
+frontend_pid=$!
+
+# Display start message
+echo "QSMxT is running!"
+
+# Check for the operating system and open the browser
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux
+    xdg-open http://0.0.0.0:3000
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # Mac OSX
+    open http://0.0.0.0:3000
+fi
+
+wait "$frontend_pid"
+wait "$backend_pid"
+

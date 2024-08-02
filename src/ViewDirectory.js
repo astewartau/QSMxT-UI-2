@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { Niivue, NVImage } from '@niivue/niivue';
-import { useTable } from 'react-table';
 import SplitPane from 'react-split-pane';
 import ReactMarkdown from 'react-markdown';
 import './ViewDirectory.css';
@@ -16,6 +15,8 @@ const ViewDirectory = () => {
   const [niiContent, setNiiContent] = useState('');
   const [imageContent, setImageContent] = useState('');
   const [markdownContent, setMarkdownContent] = useState('');
+  const [unsupportedContent, setUnsupportedContent] = useState('');
+  const [jsonContent, setJsonContent] = useState(null); // State for JSON content
   const niivueRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -33,6 +34,8 @@ const ViewDirectory = () => {
       setTextContent(null);
       setImageContent('');
       setMarkdownContent('');
+      setUnsupportedContent('');
+      setJsonContent(null); // Clear previous JSON content
 
       try {
         if (niivueRef.current.volumes.length > 0) {
@@ -50,6 +53,16 @@ const ViewDirectory = () => {
         niivueRef.current.addVolume(nvImage);
         console.log('Volume loaded');
         niivueRef.current.setSliceType(niivueRef.current.sliceTypeMultiplanar);
+
+        // Check for associated JSON file
+        const jsonFilePath = niiContent.replace(/\.(nii|nii\.gz)$/, '.json');
+        try {
+          const jsonResponse = await axios.post('http://localhost:5000/read-text-file', { filePath: jsonFilePath });
+          setJsonContent(JSON.parse(jsonResponse.data.content));
+        } catch (jsonError) {
+          console.error('Associated JSON file not found or error reading JSON file:', jsonError);
+          setJsonContent(null);
+        }
       } catch (error) {
         console.error('Error reading NIfTI file:', error);
         setNiiContent('');
@@ -93,20 +106,24 @@ const ViewDirectory = () => {
     return collapsedState;
   };
 
-  const handleFileClick = (relativePath) => {
-    const fullPath = `${directory}${relativePath}`;
+  const handleFileClick = async (relativePath) => {
+    const fullPath = `${directory}${relativePath}`.replace(/\/\//g, '/');
     console.log(`Clicked on: ${fullPath}`);
-    setSelectedFile(prevSelected => prevSelected === fullPath ? '' : fullPath);
+    setSelectedFile(fullPath);
 
     if (fullPath.endsWith('.nii') || fullPath.endsWith('.nii.gz')) {
       setTextContent(null);
       setImageContent('');
       setMarkdownContent('');
+      setUnsupportedContent('');
+      setJsonContent(null); // Clear previous JSON content
       setNiiContent(fullPath);
     } else if (fullPath.endsWith('.png') || fullPath.endsWith('.jpg') || fullPath.endsWith('.jpeg') || fullPath.endsWith('.ico')) {
       setTextContent(null);
       setNiiContent('');
       setMarkdownContent('');
+      setUnsupportedContent('');
+      setJsonContent(null); // Clear previous JSON content
       axios.post('http://localhost:5000/read-image-file', { filePath: fullPath })
         .then(response => {
           setImageContent(response.data.url);
@@ -119,6 +136,8 @@ const ViewDirectory = () => {
       setTextContent(null);
       setNiiContent('');
       setImageContent('');
+      setUnsupportedContent('');
+      setJsonContent(null); // Clear previous JSON content
       axios.post('http://localhost:5000/read-text-file', { filePath: fullPath })
         .then(response => {
           setMarkdownContent(response.data.content);
@@ -128,10 +147,13 @@ const ViewDirectory = () => {
           setMarkdownContent('');
         });
     } else {
-      axios.post('http://localhost:5000/read-text-file', { filePath: fullPath })
-        .then(response => {
-          console.log('Text content:', response.data.content);
-          const content = response.data.content;
+      try {
+        const response = await axios.post('http://localhost:5000/read-text-file', { filePath: fullPath });
+        console.log('Text content:', response.data.content);
+        const content = response.data.content;
+
+        // Check if the content is likely to be text or binary
+        if (isTextContent(content)) {
           try {
             const jsonContent = JSON.parse(content);
             setTextContent(jsonContent);
@@ -141,17 +163,36 @@ const ViewDirectory = () => {
           setNiiContent('');
           setImageContent('');
           setMarkdownContent('');
-          if (niivueRef.current) {
-            niivueRef.current.removeVolume(niivueRef.current.volumes[0]);
-            niivueRef.current = null;
-            console.log('Removed NiiVue volume and instance on text file load');
-          }
-        })
-        .catch(error => {
-          console.error('Error reading text file:', error);
+          setUnsupportedContent('');
+        } else {
           setTextContent(null);
-        });
+          setNiiContent('');
+          setImageContent('');
+          setMarkdownContent('');
+          setUnsupportedContent(fullPath);
+        }
+
+        if (niivueRef.current) {
+          niivueRef.current.removeVolume(niivueRef.current.volumes[0]);
+          niivueRef.current = null;
+          console.log('Removed NiiVue volume and instance on text file load');
+        }
+      } catch (error) {
+        console.error('Error reading text file:', error);
+        setTextContent(null);
+        setNiiContent('');
+        setImageContent('');
+        setMarkdownContent('');
+        setUnsupportedContent(fullPath);
+      }
     }
+  };
+
+  const isTextContent = (content) => {
+    // Check if the content is likely to be text
+    // This is a simple heuristic: it checks for the presence of binary data
+    const textCharacters = /^[\x00-\x7F]*$/;
+    return textCharacters.test(content);
   };
 
   const toggleCollapse = (path) => {
@@ -190,11 +231,11 @@ const ViewDirectory = () => {
             );
           } else {
             return (
-              <li 
-                key={entry.path} 
-                onClick={() => handleFileClick(entry.path)} 
-                style={{ 
-                  cursor: 'pointer', 
+              <li
+                key={entry.path}
+                onClick={() => handleFileClick(entry.path)}
+                style={{
+                  cursor: 'pointer',
                   color: selectedFile === `${directory}${entry.path}` ? 'blue' : 'black',
                   backgroundColor: selectedFile === `${directory}${entry.path}` ? '#e0f7ff' : 'transparent'
                 }}
@@ -225,39 +266,53 @@ const ViewDirectory = () => {
           <h1>View Directory</h1>
           <label>
             Directory:
-            <input 
-              type="text" 
-              placeholder="Enter directory path" 
-              value={directory} 
-              onChange={handleInputChange} 
+            <input
+              type="text"
+              placeholder="Enter directory path"
+              value={directory}
+              onChange={handleInputChange}
             />
           </label>
           <button onClick={fetchDirectoryStructure}>View</button>
           {structure && renderStructure(structure)}
         </div>
         <div className="content-display">
-          {textContent && (
+          {selectedFile && (
             <div>
-              <h2>Text Content</h2>
-              {typeof textContent === 'object' ? <TableComponent jsonData={textContent} /> : <pre>{textContent}</pre>}
-            </div>
-          )}
-          {niiContent && (
-            <div>
-              <h2>NIfTI Content</h2>
-              <canvas id="gl" ref={canvasRef} width="800" height="600"></canvas>
-            </div>
-          )}
-          {imageContent && (
-            <div>
-              <h2>Image Content</h2>
-              <img src={imageContent} alt="Selected file" style={{ maxWidth: '100%' }} />
-            </div>
-          )}
-          {markdownContent && (
-            <div>
-              <h2>Markdown Content</h2>
-              <ReactMarkdown>{markdownContent}</ReactMarkdown>
+              <h2>
+                <a href={`http://localhost:5000/files${selectedFile.replace(directory, '')}`} download>{selectedFile.split('/').pop()}</a>
+              </h2>
+              {textContent && (
+                <div>
+                  {typeof textContent === 'object' ? <TableComponent jsonData={textContent} /> : <pre>{textContent}</pre>}
+                </div>
+              )}
+              {niiContent && (
+                <div>
+                  <canvas id="gl" ref={canvasRef} width="800" height="600"></canvas>
+                </div>
+              )}
+              {jsonContent && (
+                <div>
+                  <h3>Associated JSON Data:</h3>
+                  <TableComponent jsonData={jsonContent} />
+                </div>
+              )}
+              {imageContent && (
+                <div>
+                  <img src={imageContent} alt="Selected file" style={{ maxWidth: '100%' }} />
+                </div>
+              )}
+              {markdownContent && (
+                <div>
+                  <ReactMarkdown>{markdownContent}</ReactMarkdown>
+                </div>
+              )}
+              {unsupportedContent && (
+                <div>
+                  <p>No preview available for this filetype.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
