@@ -23,12 +23,12 @@ const SortDICOMs = ({ container }) => {
   const [fileName, setFileName] = useState('');
   const [uploadComplete, setUploadComplete] = useState(false);
 
-  const handleStartSort = (directory, outputDirectory) => {
-    console.log('Starting DICOM sort with directories:', directory, outputDirectory); // Debug message
+  const handleStartSort = () => {
+    console.log('Starting DICOM sort with directories:', dicomDirectory, outputDirectory); // Debug message
     setIsProcessRunning(true);
     startProcess(
       'http://localhost:5000/start-dicom-sort',
-      { directory, outputDirectory, checkAllFiles: true, container },
+      { directory: dicomDirectory, outputDirectory, checkAllFiles: true, container },
       setSortLog,
       setSortEventSource,
       sortEventSource,
@@ -76,37 +76,51 @@ const SortDICOMs = ({ container }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: '.zip,.tar' });
 
   return (
-    <ProcessSection
-      title="QSMxT DICOM Sorter"
-      inputLabel="DICOM directory"
-      outputLabel="Output directory"
-      onSubmit={handleStartSort}
-      log={sortLog}
-      inputValue={dicomDirectory}
-      setInputValue={setDicomDirectory}
-      outputValue={outputDirectory}
-      setOutputValue={setOutputDirectory}
-      isProcessRunning={isProcessRunning}
-      setIsProcessRunning={setIsProcessRunning}
-    >
-      <div>
+    <div>
+      <label>
+        DICOM directory:
         <input 
-          type="checkbox" 
-          id="checkAllFiles" 
+          type="text" 
+          placeholder="Enter DICOM directory" 
+          value={dicomDirectory} 
+          onChange={(e) => setDicomDirectory(e.target.value)} 
         />
-        <label htmlFor="checkAllFiles">Check all files (--check_all_files)</label>
-      </div>
-      <div {...getRootProps({ className: 'dropzone' })} style={{ border: '2px dashed #cccccc', padding: '20px', textAlign: 'center' }}>
-        <input {...getInputProps()} />
-        {isDragActive ? (
-          <p>Drop the files here ...</p>
-        ) : (
-          <p>{fileName || 'Drag \'n\' drop a compressed DICOM folder (.zip or .tar) here, or click to select one'}</p>
-        )}
-        {uploadProgress > 0 && <p>Upload Progress: {uploadProgress}%</p>}
-        {uploadComplete && <p>✔ Upload complete</p>}
-      </div>
-    </ProcessSection>
+      </label>
+      <label>
+        Output directory:
+        <input 
+          type="text" 
+          placeholder="Enter Output directory" 
+          value={outputDirectory} 
+          onChange={(e) => setOutputDirectory(e.target.value)} 
+        />
+      </label>
+      <ProcessSection
+        title="QSMxT DICOM Sorter"
+        onSubmit={handleStartSort}
+        log={sortLog}
+        isProcessRunning={isProcessRunning}
+        setIsProcessRunning={setIsProcessRunning}
+      >
+        <div>
+          <input 
+            type="checkbox" 
+            id="checkAllFiles" 
+          />
+          <label htmlFor="checkAllFiles">Check all files (--check_all_files)</label>
+        </div>
+        <div {...getRootProps({ className: 'dropzone' })} style={{ border: '2px dashed #cccccc', padding: '20px', textAlign: 'center' }}>
+          <input {...getInputProps()} />
+          {isDragActive ? (
+            <p>Drop the files here ...</p>
+          ) : (
+            <p>{fileName || 'Drag \'n\' drop a compressed DICOM folder (.zip or .tar) here, or click to select one'}</p>
+          )}
+          {uploadProgress > 0 && <p>Upload Progress: {uploadProgress}%</p>}
+          {uploadComplete && <p>✔ Upload complete</p>}
+        </div>
+      </ProcessSection>
+    </div>
   );
 };
 

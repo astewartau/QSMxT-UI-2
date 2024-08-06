@@ -191,11 +191,10 @@ app.get('/nifti-convert', (req, res) => {
 
 // QSMxT Route
 app.post('/start-qsmxt', (req, res) => {
-    const { qsmBidsDirectory, outputDirectory, premade, container } = req.body;
+    const { qsmBidsDirectory, premade, container } = req.body;
     const absQsmBidsDirectory = toAbsolutePath(qsmBidsDirectory);
-    const absOutputDirectory = toAbsolutePath(outputDirectory);
 
-    const command = `qsmxt ${absQsmBidsDirectory} ${absOutputDirectory} --premade ${premade} --auto_yes`;
+    const command = `qsmxt ${absQsmBidsDirectory} --premade ${premade} --auto_yes`;
 
     runCommand(command, container, res);
 });
@@ -279,29 +278,45 @@ app.post('/read-text-file', (req, res) => {
 // Read NIfTI File Route
 app.post('/read-nifti-file', (req, res) => {
     const { filePath } = req.body;
-    const absolutePath = path.resolve(filePath);
-    if (fs.existsSync(absolutePath)) {
-        const relativePath = path.relative('/', absolutePath);
-        res.json({ url: `http://localhost:${PORT}/files/${relativePath}` });
-    } else {
-        res.status(404).send('File not found');
+    console.log(`Reading file from: ${filePath}`);
+
+    try {
+        const data = fs.readFileSync(filePath, 'utf-8');
+        res.json({ url: `http://localhost:${PORT}/files/${filePath}` });
+    } catch (error) {
+        console.error('Error reading file:', error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
 // Read image file route
 app.post('/read-image-file', (req, res) => {
     const { filePath } = req.body;
-    const absolutePath = path.resolve(filePath);
+    console.log(`Reading file from: ${filePath}`);
+
+    try {
+        const data = fs.readFileSync(filePath, 'utf-8');
+        res.json({ url: `http://localhost:${PORT}/files/${filePath}` });
+    } catch (error) {
+        console.error('Error reading file:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Read image file route
+app.post('/read-image-file', (req, res) => {
+    const { filePath } = req.body;
+    console.log(`Reading file from: ${filePath}`);
+
     if (fs.existsSync(absolutePath)) {
-        const relativePath = path.relative('/', absolutePath);
-        res.json({ url: `http://localhost:${PORT}/files/${relativePath}` });
+        res.json({ url: `http://localhost:${PORT}/files/${filePath}` });
     } else {
         res.status(404).send('File not found');
     }
 });
 
-app.use('/files', express.static('/'));
-
+const currentWorkingDirectory = process.cwd();
+app.use('/files', express.static(currentWorkingDirectory));
 
 app.post('/resolve-path', (req, res) => {
     const { directory, relativePath } = req.body;

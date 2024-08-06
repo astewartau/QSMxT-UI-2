@@ -3,7 +3,7 @@ import axios from 'axios';
 import './spinner.css'; // Make sure to import the CSS file for the spinner
 import './styles.css'; // Import the styles for warning and error messages
 
-const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, children, inputValue, setInputValue, outputValue, setOutputValue, isProcessRunning, setIsProcessRunning }) => {
+const ProcessSection = ({ title, onSubmit, log, children, isProcessRunning, setIsProcessRunning }) => {
   const [eventSource, setEventSource] = useState(null);
 
   useEffect(() => {
@@ -37,25 +37,13 @@ const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, childre
     };
   }, [eventSource, setIsProcessRunning]);
 
-  const handleInputChange = (event) => {
-    setInputValue(event.target.value);
-  };
-
-  const handleOutputChange = (event) => {
-    setOutputValue(event.target.value);
-  };
-
   const handleSubmit = () => {
-    if (inputValue && outputValue) {
-      console.log('Starting process with:', inputValue, outputValue);
-      if (eventSource) {
-        eventSource.close();
-      }
-      setIsProcessRunning(true);
-      onSubmit(inputValue, outputValue, setEventSource);
-    } else {
-      console.log('Input or output value missing');
+    console.log('Starting process');
+    if (eventSource) {
+      eventSource.close();
     }
+    setIsProcessRunning(true);
+    onSubmit(setEventSource);
   };
 
   const handleStop = () => {
@@ -78,26 +66,8 @@ const ProcessSection = ({ title, inputLabel, outputLabel, onSubmit, log, childre
   return (
     <div>
       <h1>{title}</h1>
-      <label>
-        {inputLabel}:
-        <input 
-          type="text" 
-          placeholder={`Enter ${inputLabel.toLowerCase()}`} 
-          value={inputValue} 
-          onChange={handleInputChange} 
-        />
-      </label>
-      <label>
-        {outputLabel}:
-        <input 
-          type="text" 
-          placeholder={`Enter ${outputLabel.toLowerCase()}`} 
-          value={outputValue} 
-          onChange={handleOutputChange} 
-        />
-      </label>
       {children}
-      <button onClick={handleSubmit} disabled={!inputValue || !outputValue || isProcessRunning}>Start</button>
+      <button onClick={handleSubmit} disabled={isProcessRunning}>Start</button>
       <button onClick={handleStop} disabled={!isProcessRunning}>Stop</button>
       {isProcessRunning && <div className="spinner"></div>}
       <pre dangerouslySetInnerHTML={{ __html: log }}></pre>

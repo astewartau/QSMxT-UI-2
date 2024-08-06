@@ -31,29 +31,43 @@ const DICOMToBIDSConversion = () => {
   };
 
   return (
-    <ProcessSection
-      title="QSMxT DICOM to BIDS Converter"
-      inputLabel="Sorted DICOM directory"
-      outputLabel="Output directory"
-      onSubmit={handleStartConvert}
-      log={convertLog}
-      inputValue={bidsDirectory}
-      setInputValue={setBidsDirectory}
-      outputValue={outputDirectory}
-      setOutputValue={setOutputDirectory}
-      isProcessRunning={isProcessRunning}
-      setIsProcessRunning={setIsProcessRunning}
-    >
+    <div>
       <label>
-        QSM Protocol Patterns:
+        Sorted DICOM directory:
         <input 
           type="text" 
-          placeholder="Enter patterns separated by commas" 
-          value={patterns}
-          onChange={(e) => setPatterns(e.target.value)}
+          placeholder="Enter sorted DICOM directory" 
+          value={bidsDirectory} 
+          onChange={(e) => setBidsDirectory(e.target.value)} 
         />
       </label>
-    </ProcessSection>
+      <label>
+        Output directory:
+        <input 
+          type="text" 
+          placeholder="Enter output directory" 
+          value={outputDirectory} 
+          onChange={(e) => setOutputDirectory(e.target.value)} 
+        />
+      </label>
+      <ProcessSection
+        title="QSMxT DICOM to BIDS Converter"
+        onSubmit={handleStartConvert}
+        log={convertLog}
+        isProcessRunning={isProcessRunning}
+        setIsProcessRunning={setIsProcessRunning}
+      >
+        <label>
+          QSM Protocol Patterns:
+          <input 
+            type="text" 
+            placeholder="Enter patterns separated by commas" 
+            value={patterns}
+            onChange={(e) => setPatterns(e.target.value)}
+          />
+        </label>
+      </ProcessSection>
+    </div>
   );
 };
 

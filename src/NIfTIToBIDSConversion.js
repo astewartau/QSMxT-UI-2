@@ -49,16 +49,28 @@ const NIfTIToBIDSConversion = ({ container }) => {
 
   return (
     <div>
+      <label>
+        NIfTI directory:
+        <input 
+          type="text" 
+          placeholder="Enter NIfTI directory" 
+          value={niftiDirectory} 
+          onChange={(e) => setNiftiDirectory(e.target.value)} 
+        />
+      </label>
+      <label>
+        Output directory:
+        <input 
+          type="text" 
+          placeholder="Enter Output directory" 
+          value={outputDirectory} 
+          onChange={(e) => setOutputDirectory(e.target.value)} 
+        />
+      </label>
       <ProcessSection
         title="NIfTI to BIDS Converter"
-        inputLabel="NIfTI directory"
-        outputLabel="Output directory"
         onSubmit={handleStartConvert}
         log={niftiLog}
-        inputValue={niftiDirectory}
-        setInputValue={setNiftiDirectory}
-        outputValue={outputDirectory}
-        setOutputValue={setOutputDirectory}
         isProcessRunning={isProcessRunning}
         setIsProcessRunning={setIsProcessRunning}
       />
