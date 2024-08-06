@@ -14,7 +14,7 @@ trap handle_interrupt INT
 
 # Kill any existing instances of the servers
 pkill -f "node server/index.js"
-pkill -f "pkill -f "react-app-rewired/scripts/start.js""
+pkill -f "kill -f 'serve -s build'"
 
 # Start backend in a subshell with its working directory
 echo "Starting QSMxT Node API..."
@@ -29,7 +29,7 @@ done
 
 # Start frontend in a subshell with its working directory
 echo "Starting QSMxT frontend interface..."
-( cd "${script_dir}" && npm start ) &
+( cd "${script_dir}" && serve -s build ) &
 frontend_pid=$!
 
 # Display start message
